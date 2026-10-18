@@ -26,7 +26,7 @@
           default = self.packages.${system}.kitherd;
           kitherd = pkgs.stdenv.mkDerivation {
             pname = "kitherd";
-            version = "0.1.0";
+            version = "1.0.0";
             src = ./.;
 
             nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -68,21 +68,44 @@
           pkgs,
           ...
         }:
+        let
+          cfg = config.programs.kitherd;
+        in
         {
           options.programs.kitherd = {
             enable = lib.mkEnableOption "kitherd: Kitty + Herdr AI agent orchestration";
           };
 
-          config = lib.mkIf config.programs.kitherd.enable {
+          config = lib.mkIf cfg.enable {
             home.packages = with pkgs; [
               python3
               fzf
+              gnumake
             ];
 
-            xdg.configFile."kitty/herdr_panel.py".source =
-              "${self}/skills/kitherd/scripts/herdr_panel.py";
+            home.activation.kitherd = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+              export PATH="${
+                lib.makeBinPath [
+                  pkgs.gnumake
+                  pkgs.coreutils
+                  pkgs.git
+                ]
+              }:$PATH"
 
-            home.file.".agents/skills/kitherd".source = "${self}/skills/kitherd";
+              SKILLS_CLI="skills"
+              if ! command -v skills >/dev/null 2>&1; then
+                if command -v bunx >/dev/null 2>&1; then
+                  SKILLS_CLI="bunx skills"
+                elif command -v npx >/dev/null 2>&1; then
+                  SKILLS_CLI="npx skills"
+                fi
+              fi
+
+              make -C "${self}" install \
+                PREFIX="$HOME" \
+                SKILLS_CLI="$SKILLS_CLI" \
+                </dev/null || true
+            '';
           };
         };
 
