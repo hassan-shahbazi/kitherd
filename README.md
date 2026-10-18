@@ -8,7 +8,6 @@ I have been using this system for months, and it has been a game-changer for my 
 > This is not a commercial project, and it is built based on my own needs and preferences. You are free to fork and modify it based on yours, and if you feel it can be helpful for others, feel free to open a PR.
 > However, please avoid re-inventing the wheel; this is not supposed to be a full replacement for Herdr, or an standalone AI agent orchestration system, at least not yet.
 
----
 
 ## How It Works
 
@@ -45,20 +44,17 @@ I have been using this system for months, and it has been a game-changer for my 
 - **Native Window Management:** Rather than viewing agents inside an in-terminal multiplexer TUI, the coordinator agent launches native Kitty splits (`kitty @ launch ... herdr agent attach <worker>`). Closing a Kitty split merely detaches the view; the worker agent continues running undisturbed. The agent can be re-attached to any split at any time, or killed if no longer needed.
 - **Fast Interactive Switcher:** Pressing `alt+a` opens an overlay with real-time agent status (working, blocked, idle, done), allowing you to re-attach into any split or kill runaway workers with a single keystroke.
 
----
 
-## Installation & Usage
+## Requirements
 
-### Requirements
-
-#### Herder: Server, Integrations, and Skills
+### Herder: Server, Integrations, and Skills
 
 All the orchestrations are handled by [Herdr](https://herdr.dev). Make sure you have the following installed and running:
 
 - **[Herder Skills](https://herdr.dev/docs/agent-skill/)**: Allows `kitherd` skills to communicate with the Herdr server.
 - **[Herdr Agents Integrations](https://herdr.dev/docs/integrations/)**: These integrations are necessary for efficient harness communications.
 
-#### Enable Kitty Remote Control
+### Enable Kitty Remote Control
 
 You need to enable [remote control](https://sw.kovidgoyal.net/kitty/remote-control/) for Kitty to allow the coordinator agent to spawn and attach worker agents in native splits:
 
@@ -67,7 +63,7 @@ allow_remote_control yes
 listen_on unix:/tmp/kitty-remote-control
 ```
 
-#### Agent Switcher Panel (Optional)
+### Agent Switcher Panel (Optional)
 
 Agents are orchestrated through Herder in the background; they do not necessary have to be attached to a terminal split to work. This feature lets you spawn several agents in parallel, or re-use any agent that is sit idle after the work is done, if you do not care about the workers' status.
 
@@ -93,12 +89,18 @@ Agents are orchestrated through Herder in the background; they do not necessary 
     > enter: open here   x: kill pane   esc: cancel
     ```
 
-### Clone and Install
+## Installation & Usage
 
+Clone the repository and install the skill:
 
 ```bash
-git clone https://github.com/hassan-shahbazi/kitherd.git
-cd kitherd
-make install
-```
+$ git clone https://github.com/hassan-shahbazi/kitherd.git
+$ cd kitherd
 
+# Install the skill (make sure you have `skills` in your PATH)
+$ make install
+
+# if you don't have `skills` in your PATH
+$ make install SKILLS_CLI="bunx skills"
+$ make install SKILLS_CLI="npx skills"
+```
