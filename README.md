@@ -91,6 +91,40 @@ Agents are orchestrated through Herder in the background; they do not necessary 
 
 ## Installation & Usage
 
+### Nix / NixOS (Home Manager)
+
+Add `kitherd` to your `flake.nix` inputs:
+
+```nix
+inputs = {
+  nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  kitherd = {
+    url = "github:hassan-shahbazi/kitherd";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+};
+```
+
+Import the Home Manager module into your configuration and enable it:
+
+```nix
+{ inputs, ... }:
+{
+  imports = [
+    inputs.kitherd.homeManagerModules.default
+  ];
+
+  programs.kitherd.enable = true;
+}
+```
+
+This automatically:
+- Installs `herdr_panel.py` into `~/.config/kitty/herdr_panel.py`.
+- Installs the `kitherd` skill into `~/.agents/skills/kitherd`.
+- Ensures runtime dependencies (`python3`, `fzf`) are available.
+
+### Manual / Makefile
+
 Clone the repository and install the skill:
 
 ```bash
