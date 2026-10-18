@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+
+# Node / package manager artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE artifacts
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
