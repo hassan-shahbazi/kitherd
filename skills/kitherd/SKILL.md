@@ -35,14 +35,14 @@ In this architecture:
 6. **Kitty Remote Launch Parity (`--match`, `--next-to`, `--copy-env` and `--cwd`):**
    When opening a window or tab in Kitty via `kitty @ launch`, **always pass `--match`, `--next-to`, `--copy-env` and `--cwd="$PWD"`**:
    ```bash
-   kitty @ launch --match "window_id:$KITTY_WINDOW_ID" --next-to "id:$KITTY_WINDOW_ID" --type=window --location=vsplit --copy-env --cwd="$PWD" herdr agent attach <worker-name>
+   kitty @ launch --match "window_id:$KITTY_WINDOW_ID" --next-to "id:${target:-$KITTY_WINDOW_ID}" --type=window --location=split --copy-env --cwd="$PWD" herdr agent attach <worker-name>
    ```
-   - `--match "window_id:$KITTY_WINDOW_ID"` and `--next-to "id:$KITTY_WINDOW_ID"`: Without them, Kitty opens the split in whichever tab is active, which is wrong once the user switches tabs. Kitty sets `KITTY_WINDOW_ID` in the master's own window, so `--match` targets the master's tab and `--next-to` splits beside the master. With `--type=tab`, `--next-to` keeps the new tab in the master's OS window. If `KITTY_WINDOW_ID` is empty, the master is not running inside Kitty; ask the user before launching.
+   - `--match "window_id:$KITTY_WINDOW_ID"` and `--next-to`: Without them, Kitty opens the split in whichever tab is active, which is wrong once the user switches tabs. Kitty sets `KITTY_WINDOW_ID` in the master's own window, so `--match` targets the master's tab. `--next-to` takes a window in that tab (`$target` from Step 4, or the master). With `--type=tab`, `--next-to` keeps the new tab in the master's OS window. If `KITTY_WINDOW_ID` is empty, the master is not running inside Kitty; ask the user before launching.
    - `--copy-env`: Kitty's GUI process is spawned by systemd, launchd, or the desktop manager with a minimal environment. `--copy-env` propagates your active shell environment (PATH, API keys, virtualenvs, direnv).
    - `--cwd="$PWD"`: Sets the working directory of the Kitty window container. Without this, new splits (`alt+enter`), tabs, or helper terminals created inside that Kitty window default to `$HOME`. Note: `herdr agent attach` is a client proxy, not a shell, so Kitty's `--cwd=last_reported` cannot detect the agent's directory automatically.
 
-7. **Prefer Splits Over Tabs:**
-   Always default to Kitty vertical splits (`--location=vsplit`) when attaching new worker agents so the user can observe progress side-by-side. Use horizontal splits (`--location=hsplit`) or tabs (`--type=tab --tab-title <worker-name>`) only if requested or if screen space is constrained.
+7. **Prefer Grid Splits Over Tabs:**
+   Default to a grid of splits (Step 4) so the user can observe workers side-by-side: the first worker splits the master, each later worker splits the largest worker window with `--location=split` (Kitty splits along its longer side). Use tabs (`--type=tab --tab-title <worker-name>`) only if requested or if screen space is constrained.
 
 ---
 
@@ -83,12 +83,13 @@ herdr agent start <worker-name> --kind <kind> --pane <pane-id> -- <agent-args...
 
 ### Step 4: Open a Visual View in Kitty
 
-Attach a Kitty split to view the agent:
+Attach a Kitty split to view the agent, splitting the largest worker window in the master's tab (or the master itself when there is none):
 ```bash
-kitty @ launch --match "window_id:$KITTY_WINDOW_ID" --next-to "id:$KITTY_WINDOW_ID" --type=window --location=vsplit --copy-env --cwd="$PWD" herdr agent attach <worker-name>
+target=$(kitty @ ls | jq --argjson m "$KITTY_WINDOW_ID" '[.[].tabs[] | select(any(.windows[]; .id == $m)) | .windows[] | select(.id != $m)] | max_by(.columns * .lines) | .id // empty')
+kitty @ launch --match "window_id:$KITTY_WINDOW_ID" --next-to "id:${target:-$KITTY_WINDOW_ID}" --type=window --location=split --copy-env --cwd="$PWD" herdr agent attach <worker-name>
 ```
 
-For a horizontal split, use `--location=hsplit`. For a new tab, use `--type=tab --tab-title <worker-name>`.
+The master keeps half of the tab, and workers tile the other half as a grid. For a new tab, use `--type=tab --tab-title <worker-name>` with `--next-to "id:$KITTY_WINDOW_ID"`.
 
 ### Step 5: Coordinate, Prompt, and Monitor
 
@@ -136,7 +137,7 @@ When a worker completes its assigned task and is no longer needed:
 | **Create Workspace** | `herdr workspace create --cwd "$PWD" --label <name> --no-focus` |
 | **Create Tab / Pane** | `herdr tab create --workspace <ws> --cwd "$PWD" --label <name> --no-focus` |
 | **Start Agent** | `herdr agent start <name> --kind <kind> --pane <pane-id> -- <args>` |
-| **Attach View in Kitty** | `kitty @ launch --match "window_id:$KITTY_WINDOW_ID" --next-to "id:$KITTY_WINDOW_ID" --type=window --location=vsplit --copy-env --cwd="$PWD" herdr agent attach <name>` |
+| **Attach View in Kitty** | See Step 4: `--next-to` the largest worker window, `--location=split` |
 | **Prompt Agent** | `herdr agent prompt <name> "<prompt>" --wait` |
 | **Check Fleet Status** | `herdr agent list` |
 | **Read Agent Output** | `herdr agent read <name> --source visible` (or `--source recent-unwrapped`) |
